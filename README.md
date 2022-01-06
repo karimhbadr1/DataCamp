@@ -9,3 +9,7 @@ All my notes from taking data camp courses and tracks
  - Cloud Computing for Everyone
 2) <b> SQL Fundamentals </b>:
  - Course 1: Introduction to SQL
+
+3) <b> R Programming </b>:
+ - Course 1: Introduction to R
+ - Course 2: Intermediate R
