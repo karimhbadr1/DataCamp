@@ -1,0 +1,400 @@
+---
+title: 'Course 3: Writing Efficient R Code'
+author: "Karim Badr"
+date: "1/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Chapter 1: The Art of Benchmarking
+
+* 3 steps: Thinking, Writing Code, and Running Code
+* Step 3 longer in R in comparison to C
+* "Premature optimization is the root of all evil" -Donald Knuth
+* Only optimize when necessary
+* Keep R version up to date - major releases every April - this speeds code
+
+```{r}
+version
+```
+
+```{r}
+major<-version$major
+major
+minor<-version$minor
+minor
+```
+
+* Benchmarking: comparing your existing solution to one or more alternatives (to see if they are faster)
+* First, construct a function. Second, time your function under different scenarios.
+
+```{r}
+#Example: Seq of numbers 1 to n
+colon<-function(n) 1:n
+seq_default<-function(n) seq(1,n)
+seq_by<-function(n) seq(1,n,by=1)
+```
+
+* Check timing with `system.time()`
+
+```{r}
+system.time(colon(1e8))
+system.time(seq_default(1e8))
+system.time(seq_by(1e8))
+```
+
+Running `system.time()` produces 3 outputs: user,system, and elapsed [in seconds].
+* user: CPU time charged for the execution of user instructions
+* system: the CPU time charged for execution by the operating system (kernel) on behalf of the calling process
+* elapsed: approximately the sum of user and elapsed; this is the number we typically care about
+
+Using `system.time` does not store the result, only the time.
+Solution:
+
+```{r}
+system.time(res<-colon(1e8))
+```
+
+<- performs argument passing and object assignment while = only performs one.
+
+```{r}
+system.time(res=colon(1e8))
+```
+
+Relative time is elapsed time of other functions in reference to original one.
+
+There is a package that helps us with this called `microbenchmark`
+```{r}
+install.packages("microbenchmark")
+library(microbenchmark)
+```
+
+```{r}
+n<-1e8
+microbenchmark(colon(n),
+               seq_default(n),
+               seq_by(n),
+               times = 10) #runs each function 10 times
+#unit is nanoseconds
+```
+* Use `readRDS()` to read R data.
+* Reading in RDS files are much quicker than reading in CSV files.
+
+To compare how fast your machine is in comparison to others, use the package `benchmarkme`.
+
+```{r}
+install.packages("benchmarkme")
+library(benchmarkme)
+```
+
+```{r}
+#Run each benchmark 3 times.
+res<-benchmark_std(runs=3)
+plot(res)
+```
+
+```{r}
+upload_results(res)
+```
+
+```{r}
+get_ram()
+```
+
+```{r}
+get_cpu()
+```
+
+* IO Benchmark for records the length of time it takes to read and write a 5MB file.
+
+```{r}
+res<- benchmark_io(runs = 1, size = 5)
+```
+
+```{r}
+plot(res)
+```
+
+# Chapter 2: Fine Tuning: Efficient Base R
+
+* Unlike in C, where you specify the memory for a number, this process happens automatically in R.
+* Minimize variable assignment in R to minimze memory allocation in RAM.
+* *R CLUB RULE*: Growing a vector is a bad idea and very costly!
+
+```{r}
+#this is an example of growing a vector, which is bad 
+growing <- function(n) {
+    x <- NULL
+    for(i in 1:n)
+        x <- c(x, rnorm(1))
+    x
+}
+```
+
+```{r}
+# Fast code (preallocation)
+pre_allocate <- function(n) {
+    x <- numeric(n) # Pre-allocate
+    for(i in 1:n) 
+        x[i] <- rnorm(1)
+    x
+}
+```
+
+* Calling R functions eventually leads to calling R or FORTRAN code. The goal is to access that as fast as possible. 
+* *R CLUBE RULE*: It is important to use vectorized functions. 
+
+```{r}
+#for loops are slow when you have to call them over and over again.
+x <- rnorm(10)
+x2 <- numeric(length(x))
+for(i in 1:10)
+    x2[i] <- x[i] * x[i]
+
+#Solution:
+x2_improved<-x^2
+```
+
+```{r}
+# Initial code
+n <- 100
+total <- 0
+x <- runif(n)
+for(i in 1:n) 
+    total <- total + log(x[i])
+
+# Rewrite in a single line. Store the result in log_sum
+log_sum <- sum(log(x))
+log_sum
+```
+
+* The dataframe is the key structure in R.
+* A dataframe is actually a list of vectors, where each column is a single vector.
+* Selecting by column is faster than selecting by row. Column-wise is faster than row-wise.
+* Unlike a dataframe, a matrix can only conatin a single type of data. This makes storage easier as the entire data in stored in one continuous log. Selecting columns and rows here is also easy. Using matrices can provide a massive speed boost.
+* *R CLUB RULE*: Use a matrix whenever appropriate.
+* Selecting a row or a column in a matrix is faster than selecting a row or a dataframe in a matrix. Accessing a row of a data frame is much slower than accessing that of a matrix, more so than when accessing a column from each data type.
+* Selecting a row in a dataframe returns a dataframe.
+
+# Chapter 3: Diagnosing Problems: Code Profiling
+
+* In many applications, there is usually a rate limiting section of code.Essentially a bottle neck that slows down the overall speed of execution.
+* To know where the bottlneck is, we use code profiling : you run your code and take snapshots of what the program is doing at regular intervals. This gives you data on how long each function took to run.
+* There is a function for this in base R, called `Rprof()`. It's tricky to use so there is an alternative to this called the `profvis` package.
+
+```{r}
+install.packages("profvis")
+library(profvis)
+```
+
+Example using the `ggplot2movies` package.
+```{r}
+install.packages("ggplot2movies")
+library(ggplot2movies)
+```
+
+```{r}
+#see data in a package
+data(package="ggplot2movies")
+```
+
+```{r}
+dim(movies)
+```
+
+```{r}
+#Load data
+data(movies,package="ggplot2movies")
+braveheart<-movies[7288,]
+movies<-movies[movies$Action==1,]
+plot(movies$year,movies$rating,xlab="Year",ylab="Rating")
+#local regression line
+model<-loess(rating~year,data=movies)
+j<-order(movies$year)
+lines(movies$year[j],model$fitted[j],col="forestgreen")
+points(braveheart$year,braveheart$rating,pch=21,bg="steelblue")
+```
+
+* To profile code in R studio, select and highlight the code and then profile selected lines from profile tab. Alternatively you can use the `profvis()` function and pass the lines of code within the {}.
+
+```{r}
+profvis(
+  {#Load data
+data(movies,package="ggplot2movies")
+braveheart<-movies[7288,]
+movies<-movies[movies$Action==1,]
+plot(movies$year,movies$rating,xlab="Year",ylab="Rating")
+#local regression line
+model<-loess(rating~year,data=movies)
+j<-order(movies$year)
+lines(movies$year[j],model$fitted[j],col="forestgreen")
+points(braveheart$year,braveheart$rating,pch=21,bg="steelblue")}
+)
+```
+
+* Switch dataframe to matrix
+* Switch apply to rowSum
+* Use && instead of &
+
+```{r}
+#FALSE and anything is FALSE so why need to evaluate all the rest
+FALSE&TRUE&FALSE&TRUE&FALSE
+#replace & with &&
+FALSE&&TRUE&&FALSE&&TRUE&&FALSE
+```
+
+```{r}
+a<-FALSE&TRUE&FALSE&TRUE&FALSE
+b<-FALSE&&TRUE&&FALSE&&TRUE&&FALSE
+
+microbenchmark(a,b)
+
+# Very occassionally the improved solution is actually a little slower
+# This is just random chance
+```
+
+
+# Chapter 4: Turbo Charged Code: Parallel Programming
+
+* CPUs are the brains of computers. The speed of them has stabalized in recent years, so instead of making them faster, we now have machines with multiple CPUs (Mult-core CPUs).
+
+* R uses only 1 CPU!
+
+* We can use the base package `parallel`.
+
+```{r}
+library(parallel)
+detectCores()
+```
+
+```{r}
+library(benchmarkme)
+get_cpu()
+```
+
+* Not everything needs parallel computing and multiple cores.
+
+* One simulation per core and then combine them together. This is the easiest type of parallel computing and is known as embarrassingly parallel, since little effort is needed to separate the problem into separate tasks.
+
+* Not everything can be run in parallel because we cannot guarantee the order of operations. 
+
+* Rule of thumb: A general rule of thumb for determining if a for loop can be run in parallel is to think about running the loop backwards.
+
+* Things that benefit from it include monte carlo simulation.
+
+* The parallel package `parApply`.
+
+* apply is neater than a for loop.
+* we can use it parallely.
+* specify number of cores to be n-1.
+
+```{r}
+m<-matrix(rnorm(100000),ncol=10)
+```
+
+```{r}
+copies_of_r<-3
+```
+
+```{r}
+cl<-makeCluster(copies_of_r)
+```
+
+```{r}
+parApply(cl,m,1,median)
+```
+
+```{r}
+stopCluster(cl)
+```
+
+* Benchmark serial and parallel to see which is faster. Sometimes the serial is faster.
+
+* For sapply there is parSapply and for lapply there is parLapply.
+
+*Bootstrapping [sampling WITH replacement] might benefit from this.
+
+```{r}
+data<-data.frame(runif(1000),runif(1000))
+colnames(data)<-c("a","b")
+cor(data$a,data$b)
+```
+
+```{r}
+bootstrap<-function(data_set){
+  #Sample with replacmeent
+  s<-sample(1:nrow(data_set),replace = TRUE)
+  new_data<-data_set[s,]
+  
+  #Calculate correlation
+  cor(new_data$a,new_data$b)
+}
+```
+
+```{r}
+bootstrap(data)
+```
+
+```{r}
+sapply(1:100,function(i) bootstrap(data))
+```
+
+```{r}
+no_of_cores<-3
+cl<-makeCluster(no_of_cores)
+clusterExport(cl,c("bootstrap","data"))
+parSapply(cl,1:100,function(i) bootstrap(data))
+stopCluster(cl)
+```
+
+*Bootstraping in parallel is worth it when number of bootstraps is more than 100
+
+Example
+```{r}
+play <- function() {
+  total <- no_of_rolls <- 0
+  while(total < 10) {
+    total <- total + sample(1:6, 1)
+
+    # If even. Reset to 0
+    if(total %% 2 == 0) total <- 0 
+    no_of_rolls <- no_of_rolls + 1
+  }
+  no_of_rolls
+}
+```
+
+```{r}
+# Create a cluster via makeCluster (2 cores)
+cl <- makeCluster(2)
+
+# Export the play() function to the cluster
+clusterExport(cl,"play")
+
+# Re-write sapply as parSapply
+res <- parSapply(cl,1:100, function(i) play())
+
+# Stop the cluster
+stopCluster(cl)
+```
+
+```{r}
+no_of_games <- 1e5
+
+## Time serial version
+system.time(serial <- sapply(1:no_of_games, function(i) play()))
+
+## Set up cluster
+cl <- makeCluster(3)
+clusterExport(cl, "play")
+
+## Time parallel version
+system.time(par <- parSapply(cl,1:no_of_games,function(i) play()))
+
+## Stop cluster
+stopCluster(cl)
+```
+
