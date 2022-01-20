@@ -71,5 +71,37 @@ format(time1,"%M")
 
 # Use the function diff() on pizza to calculate the differences between consecutive pizza days. 
 
+########
 
- 
+
+#Course 4 Chapter 2
+
+To specify the default arguments, set them equal to something.
+2 cases worth noting for default arguments are NULL defaults and Categorical defaults.
+
+NULL Defaults:
+
+NULL defaults are rarely used in calculations. In general, it means that there is something too complicated going on to include it in the function argument so you should read the documentation for it.
+  
+Categorical Arguments:
+
+This is for specifying many options within that argument, you list them in a character vector. The second step is calling the match.arg() function in the body of the function.
+  
+match.arg() inside the body assigns the option you chose to the argument. If nothing is specified, the first option in the character vector is taken as the option.
+
+Note: the term for converting numerical variable to a categorical variable is called cutting
+
+Passing arguments from one function to another : You can use "..." in the main function argument and in the other function in the body where you want all other arguments to be passed into place the "..." again.
+  
+glimpse()
+
+Writing checks within functions to throw errors: stop() [within body] 
+The code for providing the error message is called an assertion
+
+The assertive package can be useful (it conatins over 70 checks)
+assert_is_numeric
+coerce_to
+
+# Course 4 Chapter 3
+
+
