@@ -14,3 +14,4 @@ All my notes from taking data camp courses and tracks
  - Course 1: Introduction to R
  - Course 2: Intermediate R
  - Course 3: Writing Efficient Codein R
+ - Course 4: Introduction to Writing Functions in R
