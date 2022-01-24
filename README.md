@@ -6,7 +6,7 @@ All my notes from taking data camp courses and tracks
  - Course 2: Machine Learning for Everyone
  - Course 3: Data Visualization for Everyone
  - Course 4: Data Engineering for Everyone
- - Cloud Computing for Everyone
+ - Course 5: Cloud Computing for Everyone
 2) <b> SQL Fundamentals </b>:
  - Course 1: Introduction to SQL
 
