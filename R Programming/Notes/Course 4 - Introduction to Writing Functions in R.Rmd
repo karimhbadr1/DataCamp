@@ -1,0 +1,281 @@
+---
+title: 'Course 4: Introduction to Writing Functions in R'
+author: "Karim Badr"
+date: "1/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Chapter 1: How to write a function
+
+* Several ways to pass arguments to a function: pass arguments by position, name, or a mix.
+Usually you assign common assignments by position and rare ones by name.
+
+```{r}
+args(median) #find arguments of a function
+```
+
+* A "function signature" is function(arg1,arg2) which names the variables passed onto the function.
+
+* Functions in R return the value of the last value in their body.
+
+* It's good practice that functions names contain a verb.
+
+* Two types of function arguments: data arguments [what you compute on] and detail arguments [how you perform the computation].
+
+# Chapter 2: All about Arguments
+
+* To specify the default arguments, set them equal to something.
+* 2 cases worth noting for default arguments are NULL defaults and Categorical defaults.
+* NULL Defaults:
+
+NULL defaults are rarely used in calculations. In general, it means that there is something too complicated going on to include it in the function argument so you should read the documentation for it.
+  
+* Categorical Arguments:
+
+This is for specifying many options within that argument, you list them in a character vector. The second step is calling the match.arg() function in the body of the function.
+  
+match.arg() inside the body assigns the option you chose to the argument. If nothing is specified, the first option in the character vector is taken as the option.
+
+* Note: the term for converting numerical variable to a categorical variable is called cutting
+
+* Passing arguments from one function to another : You can use "..." in the main function argument and in the other function in the body where you want all other arguments to be passed into place the "..." again.
+
+* glimpse()
+
+* Writing checks within functions to throw errors: stop() [within body] 
+* The code for providing the error message is called an assertion
+
+* The assertive package can be useful (it contains over 70 checks)
+* assert_is_numeric
+* coerce_to
+
+# Chapter 3: Return Values and Scope
+
+* The scope of a variable is nothing more than the place in the code where it is referenced and visible. 
+
+* The value returned from a function is the last value that was created in the body of the function
+
+* return()
+
+* You can use warning() instead of stop
+
+* invisible() prevents from returning something ; isnt useful
+
+* To return multiple values from a function, collect all variables to be returned into a list or multiple assignment to variables (store objects as attributes)
+
+* There is a package called "zeallot" that has a multi-assignment operator %<-%
+
+* R.version.string
+
+* Sys.info()[c("sysname","release")]
+
+* loadedNamespaces()
+
+```{r}
+session<-function(){
+  list(
+    r_version=R.version.string,
+    operating_system=Sys.info()[c("sysname","release")],
+    loaded_pkgs=loadedNamespaces()
+  )
+}
+```
+
+```{r}
+session()
+```
+
+```{r}
+library(zeallot)
+c(vrsn,os,pkgs)%<-%session() #this returns the three things returned by session and assigns them to vrsn,os,and pkgs
+
+a%<-%session() #this returns them as a list called a 
+```
+
+* this is called unpacking variables in python
+
+* the other technique for returning multiple values involves attributes
+
+```{r}
+month_no<-setNames(1:12,month.abb)
+month_no
+```
+
+```{r}
+attributes(month_no) #this returns all attributes 
+```
+
+```{r}
+attr(month_no,"names") #this returns a specific attribute
+```
+
+```{r}
+#attr can also be used to set attributes
+
+attr(month_no,"names")<-month.name
+month_no
+```
+
+```{r}
+library(tidyverse)
+orange_trees<-as_tibble(Orange)
+orange_trees
+```
+
+```{r}
+attributes(orange_trees)
+```
+
+```{r}
+orange_trees %>% 
+  group_by(Tree) %>% 
+  attributes()
+```
+
+* In general, you should include additional return values as attributes when you need the return value to be a particular type. If you don't have this constraint, you should return the values in a list.
+
+```{r}
+library(broom)
+#glance()  model level values df
+#tidy()  coefficient level values df
+#augment()  observation level values df
+```
+
+* Environments: type of variable that is used to store other types of variables
+
+```{r}
+datacamp_list<-list(
+  name="DataCamp",
+  founding_year=2013,
+  website="https://www.datacamp.com"
+)
+```
+
+```{r}
+ls.str(datacamp_list)
+```
+
+* ls.str() is a hybrid of ls ans str functions
+
+```{r}
+datacamp_env<-list2env(datacamp_list)  #list2env converts list to an environment
+ls.str(datacamp_env)
+```
+
+* From a point of view of writing functions, the most important difference between lists and environments is that environments have a parent. 
+
+```{r}
+parent<-parent.env(datacamp_env)
+parent
+```
+
+```{r}
+environmentName(parent)
+```
+
+```{r}
+grandparent<-parent.env(parent)
+environmentName(grandparent)
+```
+
+if we keep on doing this, where do we end?
+
+```{r}
+ggrand<-parent.env(grandparent)
+environmentName(ggrand)
+```
+
+```{r}
+search()
+```
+
+We end up with the base environment and the base environment has a special environment called the empty environment (biggest doll).
+
+```{r}
+datacamp_lst<-list(
+  name="DataCamp",
+  website="https://www.datacamp.com"
+)
+datacamp_env<-list2env(datacamp_lst)
+founding_year<-2013
+```
+
+To test whether a variable exists in an environment:
+
+```{r}
+exists("founding_year",envir = datacamp_env)
+```
+
+Unexpectedly, it does! This is because if R cant find the variable in an environemnt, it will look in the parent and so on.
+
+```{r}
+exists("founding_year",envir = datacamp_env,inherits = FALSE)
+```
+
+Scope and Precedence
+
+* When you call a function, R gives it an environment to store its variables.
+
+```{r}
+x_times_y<-function(x){
+  x*y
+}
+
+x_times_y(10)
+```
+
+```{r}
+y<-10
+x_times_y(10)
+```
+
+This now works because it looks in the parent environment and so on.
+
+```{r}
+print(x)
+```
+
+x doesnt exist in the Global Environemnt.
+
+So a function can look for variables outside its environment, but the reverse isn't true: you can't look inside the function's environment from outside.
+
+```{r}
+x_times_y<-function(x){
+  x<-9
+  y<-6
+  x*y
+}
+
+y<-4
+
+x_times_y(10)
+```
+
+
+It didnt use y assigned to 4 outside the function or x assigned to 10 as input to the function. 
+
+So values defined inside the function take precedence over values passed into the function.
+
+# Chapter 4: Case study on grain yields
+
+* magrittr package 
+
+* generalised additive models (GAM) from packaage mgcv 
+
+```{r}
+#library(mgcv)
+#gam(
+#  response_var~s(expv1)+expv2,  # s means that make the effect of expv1 smooth
+#  data=dataset
+#)
+
+
+#for nonlinear response , smooth line 
+
+# you can apply a model on new data by using predict() and you specify within that the type="response"
+```
+
