@@ -1,0 +1,182 @@
+---
+title: 'Course 3: Introduction to the Tidyverse'
+author: "Karim Badr"
+date: "21/2/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Chapter 1: Data Wrangling
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+install.packages("gapminder")
+library(gapminder)
+```
+
+```{r}
+gapminder
+```
+Useful verbs:
+
+1) FILTER
+```{r}
+gapminder %>% 
+  filter(year==2007)
+```
+```{r}
+gapminder %>% 
+  filter(year==2007,country=="United States")
+```
+
+2) ARRANGE
+
+```{r}
+gapminder %>% 
+  arrange(gdpPercap)
+```
+```{r}
+gapminder %>% 
+  arrange(desc(gdpPercap))
+```
+3) MUTATE
+
+```{r}
+gapminder %>% 
+  mutate(pop=pop/1000000)
+```
+
+You can combine all above verbs.
+
+# Chapter 2: Data Visualization
+
+```{r}
+gapminder_2007<-gapminder %>% 
+  filter(year==2007)
+```
+
+```{r}
+library(ggplot2)
+ggplot(gapminder_2007,aes(x=gdpPercap,y=lifeExp))+
+  geom_point()
+```
+
+Log scales
+
+We see that most data points in the left are crammed next to each other. The scale spans several orders of magnitude, so it is useful to use log scales.
+
+```{r}
+ggplot(gapminder_2007,aes(x=gdpPercap,y=lifeExp))+
+  geom_point()+
+  scale_x_log10()
+```
+x and y are aesthetics
+Two more aesthetics: color and size
+cateogrical-->color
+continuous-->size
+```{r}
+ggplot(gapminder_2007,aes(x=gdpPercap,y=lifeExp,color=continent,size=pop))+
+  geom_point()+
+  scale_x_log10()
+```
+
+Faceting:
+
+Divide your plot into subplots.
+
+```{r}
+ggplot(gapminder_2007,aes(x=gdpPercap,y=lifeExp))+
+  geom_point()+
+  scale_x_log10()+
+  facet_wrap(~continent)
+```
+
+
+# Chapter 3: Grouping and Summarizing
+
+SUMMARIZE verb
+
+```{r}
+gapminder %>% 
+  summarize(meanLifeExp=mean(lifeExp))
+```
+
+GROUP_BY verb
+
+```{r}
+gapminder %>% 
+  group_by(year) %>% 
+  summarise(meanLifeExp=mean(lifeExp),totalPop=sum(pop))
+```
+
+Visualizing summarised data
+
+```{r}
+by_year<-gapminder %>% 
+  group_by(year) %>% 
+  summarise(meanLifeExp=mean(lifeExp),totalPop=sum(pop))
+```
+
+```{r}
+ggplot(by_year,aes(x=year,y=totalPop))+
+  geom_point()+
+  expand_limits(y=0)
+```
+
+# Chapter 4: Types of Visualizations
+
+1) LINE PLOTS: useful for showing change over time
+
+```{r}
+ggplot(by_year,aes(x=year,y=totalPop))+
+  geom_line()+
+  expand_limits(y=0)
+```
+
+2) BAR PLOTS: comparing statistics for each of several categories (discrete)
+
+
+```{r}
+by_cotninent<-gapminder %>% 
+  filter(year==2007) %>% 
+  group_by(continent) %>% 
+  summarise(meanLifeExp=mean(lifeExp))
+```
+
+```{r}
+ggplot(by_cotninent,aes(x=continent,y=meanLifeExp))+
+  geom_bar(stat="identity")
+```
+
+```{r}
+ggplot(by_cotninent,aes(x=continent,y=meanLifeExp))+
+  geom_col()
+```
+
+
+3) HISTOGRAM: describe the distribution of a one-dimensional numeric variable
+
+```{r}
+ggplot(gapminder_2007,aes(x=lifeExp))+
+  geom_histogram(binwidth = 5)
+```
+
+```{r}
+ggplot(gapminder_2007,aes(x=lifeExp))+
+  geom_histogram(bins=5)
+```
+
+4) BOX PLOTS: compare the distribution of a numeric variable among several categories
+
+```{r}
+ggplot(gapminder_2007,aes(x=continent,y=lifeExp))+
+  geom_boxplot()+
+  ggtitle("Boxplot")
+```
+
