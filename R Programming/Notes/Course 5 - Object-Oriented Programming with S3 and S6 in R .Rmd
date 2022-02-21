@@ -1,0 +1,907 @@
+---
+title: 'Course 5: Object-Oriented Programming with S3 and S6 in R'
+author: "Karim Badr"
+date: "1/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(R6)
+library(assertive)
+```
+
+# Chapter 1: Introduction to Object-Oriented Programming
+
+* Functional programming style: start with data, manipulate it using functions, and then return something.
+
+* Object oriented programming: you start by thinking with the object you want to work with, and then what data you need to describe it, and then the functionality of that object.
+
+* In OOP, functions are known as methods. method=function
+
+* Twenty object types in R. 2 important: lists and environments. They can contain many other types of variables.
+
+* OOP is a good idea when you have a limited number of complex objects that you really understand. APIs and GUIs are an example. Usually, this doesnt involve data analysis but building tools for data analysis.
+
+* In functional programming, you think about the function first. In OOP, you think about data structure first.
+
+* One of the principles of OOP is that functions can behave differently for different kinds of object. Example: calling summary on a model vs on a dataframe.
+
+* There are 9 different options for OOP: R5 and mutatr (never made it to real world, only experimental), OOP (no longer available), proto (was early system of early versions of ggplot2 but no longer used), R.oo (hasnt taken off in years), S3,S4, R6 and ReferenceClasses.
+
+* S3: 3rd version of S that is the precursor to R. Simple system. Only implements one feature of OOP: the ability to have functions works differently on different types of objects.
+
+* S4: 4th version of S. Bit weird. Most of bioconductor packages use S4. 'omics data --> S4
+
+* ReferenceClasses: attempt at creating something similar to Java or C#. Powerful features like incapsulation and inheritance.
+
+* R6: Much of the same group as ReferenceClasses but easier. Powerful.
+
+* To determine types of variables: str(), class(), typeof() [example: tells u different type of matricies] [typeof() is especially useful with S3], mode(), and storage.mode() [exist for compatibility with older S code].
+
+* an array is a generalisation of a matrix with an arbitrary number of dimensions.
+
+* Function types: most of them are "closure"s, some are "builtin" functions that use a special evaluation mechanism  to make them go faster (ex: length()), and "special" like if and while (language constructs).
+
+* Assigning classes: 
+
+```{r}
+(x<-rexp(10))
+```
+
+```{r}
+class(x)<-"random_numbers"
+```
+
+```{r}
+x
+```
+
+```{r}
+class(x)
+typeof(x) #you cant override typeof
+#x is said to have an implicit class of numeric
+```
+
+```{r}
+is.numeric(x)
+```
+
+# Chapter 2: Using S3
+
+* Having different behaviours for functions under different kinds of input is called "function overloading"
+* S3 exists for this purpose. It splits the function into two parts: a generic function and method functions for each class.
+* print and summary are examples of generic functions.
+
+```{r}
+print
+```
+
+* only 1 line of code: print is passed to UseMethod as a string.
+
+```{r}
+summary
+```
+
+* Two conditions that must be followed for S3 methods.
+
+* One: the name of each method must be the name of the generic, then a dot, then the class of the variable. For example, the print method for Date objects is called print dot Date. 
+
+* Two: the arguments to the method must include all the arguments for the generic.
+
+* Example:print.date has the same args as the generic print + max=NULL. The ellipses "..." argument allows us to pass arguments between one method to another (so from generic to other methods).
+
+* It's good practice to always include ellipses in both the methods and the generics. Don't include other dots in the names of your variables (because S3 uses the dot to separate between the generic and the method). Variable names seperated by dots are called "leopard case" - lower.leopard.case. Don't use this naming convention. Use lower_snake_case OR lowerCamelCase.
+
+```{r}
+args(print)
+```
+
+```{r}
+args(print.Date)
+```
+
+* all S3 methods have a name of the form generic.class. The converse is not true: a function can have a name containing a dot without being an S3 method.
+
+* To check whether a function is a S3 generic or S3 method, use "is_s3_generic" or "is_s3_method" from the "pryr" package.
+
+```{r}
+#install.packages("pryr")
+library(pryr)
+```
+
+```{r}
+is_s3_generic("is.complex")
+is_s3_method("is.complex")
+is_s3_generic("is")
+is_s3_generic("seq")
+is_s3_method("seq.Date")
+```
+
+* S3 generics contain a call to UseMethod, and S3 methods take the form generic.class
+
+* You can create your own S3 functions. The first step is to write the generic. This is typically a single line function that calls UseMethod(), passing its name as a string.
+
+```{r}
+# Create get_n_elements
+get_n_elements <- function(x, ...)
+{
+  UseMethod("get_n_elements")
+}
+```
+
+```{r}
+class(get_n_elements)
+is_s3_generic("get_n_elements")
+```
+
+```{r}
+# Create a data.frame method for get_n_elements
+get_n_elements.data.frame <- function(x,...){
+    nrow(x)*ncol(x)
+}
+is_s3_generic("get_n_elements.data.frame")
+is_s3_method("get_n_elements.data.frame")
+```
+
+If you put a type of data into a function that doesnt work with that data, it will throw an error. It also doesnt make sense to create a function for every data type, so you define a generic default: genericname.default that will work on any object that doesnt have its own function method.
+
+```{r}
+get_n_elements.default<-function(x,...){
+  length(unlist(x))
+}
+```
+
+To know what methods are available for a function:
+
+```{r}
+methods(get_n_elements)
+#or
+methods("get_n_elements")
+```
+
+```{r}
+methods(mean)
+```
+
+methods() returns S3 and S4 methods
+
+```{r}
+methods(class="glm")
+```
+
+```{r}
+.S3methods(class="glm")
+```
+
+```{r}
+.S4methods(class="glm")
+```
+
+```{r}
+methods(class="function")
+```
+
+```{r}
+.S3methods(class="lm")
+```
+
+
+R is optimised for writing, debugging, and maintaing code, but not necessarily running it. Sometimes it is slow so these functions are better written in C.
+
+R has many interfaces to C and the highest is known as "primitive". This is reserved for the base functions in R. They are called primitive functions. -,+,exp,sin,if,for,...
+
+```{r}
+`-`
+```
+
+```{r}
+.S3PrimitiveGenerics
+```
+
+These functions behave a bit differently than other generic functions. The biggest difference is in terms of what happens when a suitable method can't be found.
+
+Not a primitive generic:
+
+```{r}
+all_of_time<-c("1970-01-01","2012-12-21")
+as.Date(all_of_time)
+```
+
+```{r}
+class(all_of_time)<-"date_strings"
+as.Date(all_of_time)
+```
+
+Primitive generic:
+
+```{r}
+length(all_of_time)
+```
+
+It doesn't break because the class changed. It doesn't throw an error because a suitable method is not found. It goes and is executed in C, by first looking at the typeof the variable.
+
+Variables can have more than one class. The most specific class should be listed first. It's good practice to keep the original class as the final class.
+
+```{r}
+x<-c(1,3,6,10,15)
+class(x)<-c("triangular_numbers","natural_numbers","numeric")
+```
+
+```{r}
+class(x)
+```
+
+```{r}
+is.numeric(x)
+```
+
+There's no built in test for specific classes, so we use "inherits".
+
+```{r}
+inherits(x,"triangular_numbers")
+```
+
+```{r}
+what_am_i<-function(x,...){
+  UseMethod("what_am_i")
+}
+
+what_am_i.triangular_numbers<-function(x,...){
+  message("I am triangular numbers")
+  NextMethod("what_am_i")
+}
+
+what_am_i.natural_numbers<-function(x,...){
+  message("I am natural numbers")
+  NextMethod("what_am_i")
+}
+
+what_am_i.numeric<-function(x,...){
+  message("I am numeric")
+}
+```
+
+```{r}
+what_am_i(x)
+```
+
+# Chapter 3: Using R6
+
+R6 provides a way of storing data and objects within the same variable.
+The first thing when working with R6 is creating a class generator for your object. A class generator is a template that specifies what data can be stored in the object and what functions can be applied to the object.Also used to create the specified object. --> class generators aka "factories"
+
+Example of microwave oven: class generator is microwave factory and it is used to create microwave oven objects.
+
+Factories are defined using the R6Class function. The first argument to R6Class is the name of the class. By convention, this should be in UpperCamelCase. The second argument you need to know about is called "private". This stores the object's data. It is always a list, and each of the elements of the list must be named. Two other arguments are "public" and "active".
+
+```{r}
+library(R6)
+
+thing_factory<-R6Class(
+  "Thing",
+  private = list(
+    a_field="a_value",
+    another_field=123
+  )
+)
+```
+
+Now, we can create objects in that thing using new
+
+```{r}
+a_thing<-thing_factory$new()
+another_thing<-thing_factory$new()
+yet_another_thing<-thing_factory$new()
+```
+
+Even though objects can be complex, they still can be easy to use, like microwaves are. In OOP, the term used for separating implementation from user interface is called "encapsulation". 
+
+```{r}
+microwave_oven_factory<-R6Class(
+  "MicrowaveOven",
+  private=list(
+    power_rating_watts=800,
+    door_is_open=FALSE
+  ),
+  public = list(
+    open_door=function() {
+      private$door_is_open=TRUE
+    }
+  )
+)
+```
+
+power_rating_watts is an example of an implementation details. They are stored in the private list. by contrast, the user interface is stored in the public list. Its content are usually functions. 
+
+private$ can let you access private elements
+self$ can let you access public elements
+
+```{r}
+# Add a cook method to the factory definition
+microwave_oven_factory <- R6Class(
+  "MicrowaveOven",
+  private = list(
+    power_rating_watts = 800
+  ),
+  public = list(
+    cook = function(time_seconds) {
+      Sys.sleep(time_seconds)
+      print("Your food is cooked!")
+    }
+  )
+)
+
+# Create microwave oven object
+a_microwave_oven <- microwave_oven_factory$new()
+
+# Call cook method for 1 second
+a_microwave_oven$cook(1)
+```
+
+There is one special public method named initialize() (note the American English spelling). This is not called directly by the user. Instead, it is called automatically when an object is created; that is, when the user calls new().
+
+```{r}
+public = list(
+    initialize = function(a_field, another_field) {
+      if(!missing(a_field)) {
+        private$a_field <- a_field
+      }
+      if(!missing(another_field)) {
+        private$another_field <- another_field
+      }
+    }
+  )
+```
+
+Notice the use of missing(). This returns TRUE if an argument wasn't passed in the function call.
+Arguments to the factory's new() method are passed to initialize().
+
+```{r}
+# Add an initialize method
+microwave_oven_factory <- R6Class(
+  "MicrowaveOven",
+  private = list(
+    power_rating_watts = 800,
+    door_is_open = FALSE
+  ),
+  public = list(
+    cook = function(time_seconds) {
+      Sys.sleep(time_seconds)
+      print("Your food is cooked!")
+    },
+    open_door = function() {
+      private$door_is_open <- TRUE
+    },
+    close_door = function() {
+      private$door_is_open <- FALSE
+    },
+    # Add initialize() method here
+    initialize = function(power_rating_watts, door_is_open) {
+      if(!missing(power_rating_watts)) {
+        private$power_rating_watts <- power_rating_watts
+      }
+      if(!missing(door_is_open)){
+        private$door_is_open<-door_is_open
+      }
+    }
+  )
+)
+
+# Make a microwave
+a_microwave_oven <- microwave_oven_factory$new(
+  power_rating_watts=650,
+  door_is_open=TRUE
+)
+
+```
+
+Getting and setting with active bindings
+
+Data elts in private are not directly accessible by the user.
+You may wish to provide controlled access to them
+2 access cases: retrieve (getting the data) or change (setting the data)
+This access in R6 is achieved through active binding : defined like functions but accessed like data variables.
+
+Define them: they are added to the active element of the class. It is a list. We have an issue here which is that the elements within private, public, and active should be named differently, but we want them to be similarly named. So, to do that, a convention is setting the names of the elts in private field to begin with double dots "..".
+To retrieve, you define it as a function with no arguments.
+To set, you define it as a function with 1 argument only.
+Use custom logic (e.g using assertive package) to check for your conditions.
+They will be accessed as data variables using $.
+
+Showing how to retrieve:
+
+```{r}
+# Add a binding for power rating
+microwave_oven_factory <- R6Class(
+  "MicrowaveOven",
+  private = list(
+    ..power_rating_watts = 800
+  ),
+  active = list(
+    # Add the binding here
+    power_rating_watts = function(){
+      private$..power_rating_watts
+    }
+
+    
+  )
+)
+
+# Make a microwave 
+a_microwave_oven <- microwave_oven_factory$new()
+
+# Get the power rating
+a_microwave_oven$power_rating_watts
+```
+
+Showing how to set:
+
+```{r}
+# Add a binding for power rating
+microwave_oven_factory <- R6Class(
+  "MicrowaveOven",
+  private = list(
+    ..power_rating_watts = 800,
+    ..power_level_watts = 800
+  ),
+  # Add active list containing an active binding
+  active = list(
+    power_level_watts = function(value) {
+      if(missing(value)) {
+        # Return the private value
+        private$..power_level_watts
+      } else {
+        # Assert that value is a number
+        assert_is_a_number(value)
+        # Assert that value is in a closed range from 0 to power rating
+        assert_all_are_in_closed_range(x=value,lower=0,upper=private$..power_rating_watts)
+        # Set the private power level to value
+        private$..power_level_watts <- value
+      }
+    }
+  )
+)
+
+# Make a microwave 
+a_microwave_oven <- microwave_oven_factory$new()
+
+# Get the power level
+a_microwave_oven$power_level_watts
+
+# Try to set the power level to "400"
+a_microwave_oven$power_level_watts <- "400"
+
+# Try to set the power level to 1600 watts
+a_microwave_oven$power_level_watts <- 1600
+
+# Set the power level to 400 watts
+a_microwave_oven$power_level_watts <- 400
+
+#Retrieve
+a_microwave_oven$power_level_watts
+```
+
+# Chapter 4: R6 Inheritance 
+
+If you change  the definition of the original microwave, you want a way for this to be mirrored in the fancy microwave without copying and pasting. --> inheritance in R6
+
+child inherits from parent class. only works in one direction (parent to child but not opposite)
+
+
+```{r}
+library(R6)
+library(assertive)
+```
+
+```{r}
+class(microwave_oven_factory)
+```
+
+```{r}
+class(a_microwave_oven)
+```
+
+```{r}
+a_microwave_oven_child_factory<-R6Class(
+  "Child Micro Factory",
+  inherit = microwave_oven_factory,
+  public=list(
+    a=1
+  )
+)
+```
+
+```{r}
+class(a_microwave_oven_child_factory)
+```
+
+```{r}
+a_microwave_oven_child_factory_object<-a_microwave_oven_child_factory$new()
+class(a_microwave_oven_child_factory_object)
+```
+`inherit` must be a R6ClassGenerator.
+
+With inheritance, you also want to add new functionality. 
+2 ways: override what is inherited from the parent or extend to add new functionality.
+
+```{r}
+thing_factory<-R6Class(
+  "Thing",
+  public=list(
+    do_something=function(){
+      message("the parent do_something method")
+    }
+  )
+)
+```
+
+```{r}
+thing_factory_object<-thing_factory$new()
+thing_factory_object$do_something()
+```
+
+```{r}
+child_thing_factory<-R6Class(
+  "ChildThing",
+  inherit = thing_factory,
+  public = list(
+    do_something=function(){
+      message("the child do_something method")
+    },
+    do_something_else=function(){
+      message("the child do_something_else method")
+    }
+  )
+)
+```
+
+```{r}
+child_thing_factory_object<-child_thing_factory$new()
+child_thing_factory_object$do_something()
+```
+
+So, this shows that the do_something method was overwrittern in the child factory, although it was available in the parent factory. However, we can still access the parent factory methods
+
+2 important keywords: "self" and "super"
+
+We saw previously that public can access private using `private$` and they can access other public methods in their class using `self$`. If they want to access public methods in the parent class, you use `super$`.
+
+In OPP, parent class is sometimes called super class.
+
+```{r}
+child_thing_factory<-R6Class(
+  "ChildThing",
+  inherit = thing_factory,
+  public = list(
+    do_something=function(){
+      message("the child do_something method")
+    },
+    do_something_else=function(){
+      message("the child do_something_else method")
+    self$do_something()
+    super$do_something()
+    }
+  )
+)
+```
+
+
+```{r}
+child_thing_factory_object<-child_thing_factory$new()
+child_thing_factory_object$do_something_else()
+```
+
+What about a chain of inheritence? 
+
+```{r}
+grand_child_thing_factory<-R6Class(
+  "GrandChildThing",
+  inherit = child_thing_factory,
+  public=list(
+    do_something=function(){
+      message("the grand-child do_something method")
+      super$do_something()
+      super$super$do_something()
+    }
+  )
+)
+```
+
+```{r}
+a_grand_child_thing<-grand_child_thing_factory$new()
+a_grand_child_thing$do_something()
+```
+
+This doesn't work. By default, R6 classes only have access to their direct parent.
+You can go around this by manipulating active bindings.
+You define super_ (you use the underscore because super is a reserved word) and the function is just read only : function() followed by super
+
+```{r}
+child_thing_factory<-R6Class(
+  "ChildThing",
+  inherit = thing_factory,
+  public = list(
+    do_something=function(){
+      message("the child do_something method")
+    },
+    do_something_else=function(){
+      message("the child do_something_else method")
+    }
+  ),
+  active = list(
+    super_=function() super
+  )
+)
+```
+
+```{r}
+grand_child_thing_factory<-R6Class(
+  "GrandChildThing",
+  inherit = child_thing_factory,
+  public=list(
+    do_something=function(){
+      message("the grand-child do_something method")
+      super$do_something()
+      super$super_$do_something()
+    }
+  )
+)
+```
+
+```{r}
+a_grand_child_thing<-grand_child_thing_factory$new()
+a_grand_child_thing$do_something()
+```
+
+To access functionality from other than their direct parent, the intermediate class should expose their parents using an active binding named super_ which simply returns super object.
+
+# Chapter 5: Advanced R6 Usage
+
+We save in chapter 1 that there are two types of variables that can be used to store other variables: list and environment.
+We worked with list already.
+
+```{r}
+env<-new.env()
+```
+
+Unlike lists, where you add their content while creating them, 
+
+```{r}
+lst<-list(x=pi^(1:5),y=matrix(month.abb,3))
+```
+
+
+environments are always created empty and then you add the contents afterwards. 
+
+```{r}
+env$x<-pi^(1:5)
+env[["y"]]<-matrix(month.abb,3)
+```
+
+The print method for environment isn't very informative.
+
+```{r}
+lst
+```
+
+```{r}
+env
+```
+
+Use `ls.str()` instead
+
+```{r}
+ls.str(env)
+```
+
+One way in which environments are different than lists which becomes important when we work with R6 classes:
+
+```{r}
+lst2<-lst
+(lst$x<-exp(1:5))
+```
+
+Here we took a copy of the lst and changed something in the original list. these are not passed to the lst2.
+
+```{r}
+lst$x
+lst2$x
+```
+
+
+```{r}
+identical(lst$x,lst2$x)
+```
+
+Now, let's do this with environemnts.
+
+```{r}
+env2<-env
+env$x<-exp(1:5)
+```
+
+```{r}
+env2$x
+```
+
+However, in enviornments the chage has been passed along.
+
+Lists (like most R objects) use copy by value
+Environments use copy by reference.
+
+You can make use of this in R6 by defining a private element, called shared by convention.
+
+Shared takes several lines of code so we use {}.
+First, define a new environment. assign a var in it and then return the env.
+
+```{r}
+thing_factory<-R6Class(
+  "Thing",
+  private=list(
+    shared={
+      e<-new.env()
+      e$a_shared_field=123
+      e
+    }
+  ),
+  active=list(
+    a_shared_field=function(value){
+      if (missing(value)){
+        private$shared$a_shared_field
+      } else {
+        private$shared$a_shared_field<-value
+      }
+    }
+  )
+)
+```
+
+```{r}
+a_thing<-thing_factory$new()
+another_thing<-thing_factory$new()
+```
+
+```{r}
+a_thing$a_shared_field
+another_thing$a_shared_field
+```
+
+Now, see what happens when we change the shared field in one of the objects.
+
+```{r}
+a_thing$a_shared_field<-456
+another_thing$a_shared_field
+```
+
+Since the field is shared, we have a copy by reference behaviour.
+
+Now, what about cloning R6 objects?
+
+R6 also use copy by reference. In private, you assign you using =
+
+```{r}
+thing_factory<-R6Class(
+  "Thing",
+  private = list(
+    ..a_field=123
+  ),
+  active = list(
+    a_field=function(value) {
+      if (missing(value)){
+        private$..a_field
+      } else {
+        private$..a_field<-value
+      }
+    }
+  )
+)
+```
+
+```{r}
+a_thing<-thing_factory$new()
+a_copy<-a_thing
+a_thing$a_field<-456
+a_copy$a_field
+```
+
+Changing the field in one object changes it in all objects.
+Sometimes this is not what you want, so what can we do about that?
+
+We use clone() which copies by value not by reference. This is automatically generated.
+
+```{r}
+a_copy<-a_thing$clone()
+```
+
+```{r}
+a_thing$a_field<-789
+a_copy$a_field
+```
+
+One special case is when one R6 class contain other R6 classes.
+
+```{r}
+container_factory<-R6Class(
+  private=list(
+    ..thing=thing_factory$new()
+  ),
+  active = list(
+    thing=function(value){
+      if(missing(value)){
+        private$..thing
+      } else {
+        private$..thing<-value
+      }
+    }
+  )
+)
+```
+
+What happens when you clone the conatiner?
+
+```{r}
+a_container<-container_factory$new()
+a_clone<-a_container$clone()
+```
+
+```{r}
+a_container$thing$a_field
+a_container$thing$a_field<-"a new value"
+a_clone$thing$a_field
+```
+
+To use copy by value for the fields of the INTERNAL R6 object, you use:
+
+```{r}
+a_deep_clone<-a_container$clone(deep=TRUE)
+a_container$thing$a_field<-"a different value"
+a_deep_clone$thing$a_field
+```
+
+If an R6 object connects to a database or a file, then it can be dangerous to delete it before closing the connection first. if it also changes stuff, it is good practice to return them to their original setup state.
+
+we previously learnt about `initialize` which customizes setup
+`initialize` has a counterpart `finalize()`that customizes cleanup when an R6 object is destroyed
+
+Finalize is always always a function with no arguments defined in the public elements of an R6 class
+
+
+```{r}
+thing_factory<-R6Class(
+  private=list(
+    ..a_field=123
+  ),
+  public=list(
+    initialize=function(a_field){
+      if(!missing(a_field)){
+        private$a_field=a_field
+      }
+    },
+    finalize=function(){
+      message("Finalizing the Thing")
+    }
+  )
+)
+```
+
+
+```{r}
+a_thing<-thing_factory$new()
+```
+
+```{r}
+rm(a_thing)
+```
+
+When you delete it, the finalize isnt called immediately. It is called when garbage collected.
+
+```{r}
+gc()
+```
+
+This makes more sense when used with databases.
+
