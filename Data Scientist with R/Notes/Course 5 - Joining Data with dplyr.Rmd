@@ -1,0 +1,138 @@
+---
+title: 'Course 5 - Joining Data with dplyr'
+author: "Karim Badr"
+date: "22/2/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Chapter 1: Joining Tables
+
+```{r}
+library(dplyr)
+library(tidyr)
+```
+
+```{r}
+#file.choose() #to choose file
+```
+
+```{r}
+sets<-readRDS("/Users/karimbadr/Desktop/Karim/Learning/DataCamp/R Data Scientist/sets.rds")
+themes<-readRDS("/Users/karimbadr/Desktop/Karim/Learning/DataCamp/R Data Scientist/themes.rds")
+```
+
+Inner Join
+
+```{r}
+sets %>% 
+  inner_join(themes,by=c("theme_id"="id"),suffix=c("_set","_theme"))
+```
+
+One-to-many relationships
+
+```{r}
+inventories<-readRDS("/Users/karimbadr/Desktop/Karim/Learning/DataCamp/R Data Scientist/inventories.rds")
+```
+
+```{r}
+sets %>% 
+  inner_join(inventories,by=c("set_num"))
+```
+```{r}
+sets %>% 
+  inner_join(inventories,by=c("set_num")) %>% 
+  filter(version==1)
+```
+Joining in either direction will give the same thing!
+
+We can use the same approach to join 3 or more tables with a series of joins.
+
+# Chapter 2: Left and Right Joins
+
+LEFT JOIN verb
+
+Inner join only keeps observations that appear in both tables. Left join keeps all from 1st and matches to second.
+
+```{r}
+inventory_parts<-readRDS("/Users/karimbadr/Desktop/Karim/Learning/DataCamp/R Data Scientist/inventory_parts.rds")
+```
+
+```{r}
+inventory_parts_joined<-inventories %>% 
+  inner_join(inventory_parts,by=c("id"="inventory_id")) %>% 
+  select(-id,-version) %>% 
+  arrange(desc(quantity))
+```
+
+```{r}
+batmobile<-inventory_parts_joined %>% 
+  filter(set_num=="7784-1") %>% 
+  select(-set_num)
+
+batwing<-inventory_parts_joined %>% 
+  filter(set_num=="70916-1") %>% 
+  select(-set_num)
+```
+
+```{r}
+batmobile %>% 
+  left_join(batwing,by=c("part_num","color_id"),suffix=c("_batmobile","_batwing"))
+```
+RIGHT JOIN verb
+
+Right join keeps all in 2nd.
+
+```{r}
+batmobile %>% 
+  right_join(batwing,by=c("part_num","color_id"),suffix=c("_batmobile","_batwing"))
+```
+Left joins and right joins are mirrors of each others.
+
+```{r}
+#replace_na(list(n=0))  n is the name of the column
+```
+
+
+Joining a table onto itself when there is a hierarchical relationship (e.g. column parent_id)
+
+```{r}
+themes %>% 
+  inner_join(themes,by=c("parent_id"="id"),suffix=c("_child","_parents"))
+```
+
+# Chapter 3: Full, Semi, and Anti Joins
+
+
+FULL Join : keeping all observations, whether they appear in one or both
+
+```{r}
+batmobile$part_num<-as.numeric(batmobile$part_num)
+```
+
+```{r}
+batmobile %>% 
+  full_join(batwing,by=c("part_num"="color_id"),suffix=c("_batmobile","_batwing")) %>% 
+  replace_na(list(quantity_batmobile=0,
+                  quantity_batwing=0))
+```
+The 4 verbs: left,right,inner, and full are mutating verbs.
+
+There's a different class of verbs called filtering joins, which has SEMI and ANTI joins.
+They keep or remove observations from the first table but doesn't add new variables. 
+
+SEMI Join: What observations in X are also in Y but returns only X
+
+
+ANTI Join: What observations in X are not in Y
+
+# Chapter 4: Case Study: Joins on Stack Overflow Data
+
+To count within a summarize, use n(). 
+
+The bind_rows() verb : combine rows from different tables (stack one on top of another)
+
+year() function from lubridate package
