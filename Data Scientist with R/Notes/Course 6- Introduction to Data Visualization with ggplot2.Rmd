@@ -18,10 +18,143 @@ load("/Users/karimbadr/Documents/GitHub/DataCamp/Data Scientist with R/Notes/fis
 load("/Users/karimbadr/Documents/GitHub/DataCamp/Data Scientist with R/Notes/recess.RData")
 ```
 
+```{r}
+library(ggplot2)
+```
+
 # Chapter 1: Introduction
+
+Exploratory vs Explanatory visualizations 
+
+Exploratory visualizations are easily-generated, data-heavy and intended for a small specialist audience, for example yourself and your colleagues - their primary purpose is graphical data analysis. Explanatory visualizations are labor-intensive, data-specific and intended for a broader audience, e.g. in publications or presentations - they are part of the communications process. 
+
+Anscombe's plots : Anscombe's quartet comprises four data sets that have nearly identical simple descriptive statistics, yet have very different distributions and appear very different when graphed. Each dataset consists of eleven points.
+
+```{r}
+# Change the command below so that cyl is treated as factor
+ggplot(mtcars, aes(factor(cyl), mpg)) +
+  geom_point()
+```
+
+The grammar of graphics (Leland Wilkinson):
+
+2 principles: 
+1) Graphics = distinct layers of grammatical elements
+2) Meaningful plots through aesthetic mappings
+
+Layers are like adjectives and nouns and aesthetic mappings are like grammatical rules for how to assemble that vocabulary.
+
+3 essential grammatical elements: data, aesthetics, and geometries 
+
+Aesthetics: the scales onto which we map our data
+Geometries: the visual elements used for our data
+Themes: all non-data ink
+
+7 grammatical elements (or layers) to be explored: data, aesthetics, geometries, themes, statistics, coordinates, and facets.
+
+With aes : color, size, and shape.
+Shape is only used with categorical data.
+
+Two common geom layer functions:
+
+* geom_point() adds points (as in a scatter plot).
+* geom_smooth() adds a smooth trend curve.
+
+If you have multiple geoms, then mapping an aesthetic to data variable inside the call to ggplot() will change all the geoms. It is also possible to make changes to individual geoms by passing arguments to the geom_*() functions.
+
+You can save a ggplot to a variable and then add onto that.
+
+You can use aes() also inside a geom.
 
 # Chapter 2: Aesthetics
 
+X and Y axes are aesthetics.
+Color aesthetic vs Fill color : color is usually color of points or borders (outlines) of other geoms.
+Aesthetics are called upon inside aes().
+You can use aes() also inside a geom. We do that if we are mixing data sources or if we dont want all layers to inherit the same aesthetics.
+Size : area
+alpha: transperancy
+linetype: line dash pattern
+labels (text on plot or axis)
+shape : shape of a point 
+
+These are the aesthetics you can consider within aes() in this chapter: x, y, color, fill, size, alpha, labels and shape.
+
+You used aes() inside a geom usually when you are adding to a ggplot that was saved as a variable [usually not always!]
+
+label and shape are only applicable to categorical data.
+
+When we talk about how something looks, we refer to it as attributes. Attributes are set in the geom arguments!
+
+Modifying aesthetics: Positions (for overlapping) : identity (default), dodge, stack,fill,jitter,jitterdodge, and nudge
+
+jitter adds random noise to distinguish areas of high density. you can define it within geom_point() or as its own function first as jitter_position() and then use that in the geom_point(). 
+
+can also use geom_jitter() instead of geom_point(position="jitter")
+
+Many scale functions also can be used : scale_*_*
+
+The arguments for the scale functions are usually the name of the scale, limits, breaks, expand and labels. 
+
+Limits: scale's range
+Breaks: Tick mark positions
+Expand: expand is a numeric vector of length two, giving a multiplicative and additive constant used to expand the range of the scales so that there is a small gap between the data and the axes.
+Labels: adjust category names
+
+we can use labs() to quickly change the axes labels (x,y, and legend [e.g color])
+
+scale_color_manual() defines properties of the color scale (i.e. axis). The first argument sets the legend title. values is a named vector of colors to use.
+
+geom_bar(position="dodge") : bars are displayed next to each other instead on top of each other
+
+Best practices: FORM FOLLOWS FUNCTION
+
+Typically, the dependent variable is mapped onto the the y-axis and the independent variable is mapped onto the x-axis.
+
 # Chapter 3: Geometries
+
+1st layer: data
+2nd layer: aesthetics
+3rd layer: geometries
+
+
+1) Scatter Plots
+
+geom_point() : you need an x and y aesthetic
+Optional: alpha, color, fill, size, shape, and stroke
+geom_point() can inherit data from a different dataset!
+
+Alpha or hollow circles help with overplotting
+
+Possible geoms for scatter plots: points, jitter, abline, smooth, and count
+
+2) Histograms
+
+A histogram is a special case of a bar plot.
+
+we show the distribution of a continuous variable
+
+here we only need a single aesthetic x
+
+The default binwidth is calculated as follows:
+
+```{r}
+diff(range(iris$Sepal.Width))/30
+```
+
+X-axis labels should be between the bars not exactly on them because they represnet intervals. to do that: geom_histogram(bindwidth=t,center=t/2)
+
+The default position of a histogram is position="stack". You can use dodge or fill instead. 
+
+In aes, Map y to the internal variable ..density.. to show frequency densities.
+
+  geom_histogram(binwidth = 1, position = "identity",alpha=0.4) : bars are top of each other, using the "identity" position. So each bar can be seen, set alpha to 0.4.
+  
+  
+
+3) Bar Plots
+
+4) Line Plots
+
 
 # Chapter 4: Themes
