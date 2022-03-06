@@ -1,5 +1,5 @@
 ---
-title: 'Course 5 - Joining Data with dplyr'
+title: 'Course 6 - Introduction to Data Visualization with ggplot2'
 author: "Karim Badr"
 date: "06/03/2022"
 output: html_document
@@ -150,11 +150,106 @@ In aes, Map y to the internal variable ..density.. to show frequency densities.
 
   geom_histogram(binwidth = 1, position = "identity",alpha=0.4) : bars are top of each other, using the "identity" position. So each bar can be seen, set alpha to 0.4.
   
-  
-
 3) Bar Plots
+
+Bar plots used with categorical x axis
+You can use geom_bar() or geom_col()
+geom_car() : stat is count : it counts the actual number of cases at each x position
+geom_col() : stat is identity : plots actual values
+
+Two types: absolute counts and distributions
+
+geom_col() is just geom_bar() where both the position and stat arguments are set to "identity"
+
+aes(fill=z) is usually used to specify colors
+
+scale_fill_brewer() can be used. this, without arguments, has max of 9 colors
+
 
 4) Line Plots
 
+Line plots : line or path
+
+useful for time series
+
+geom_area()
+
+geom_ribbon() for overlapping areas with alpha
+
+specifying color in aes() is important for many groups of lines.
 
 # Chapter 4: Themes
+
+3 types: text, line, and rectangle.
+
+modified using: element_text(), element_line(), or element_rect()
+
+To modify an element, just call its argument in the theme function and use the appropriate element_ function to specify what we want to change
+
+Hierarchical naming reflects inheritance rules: All text elements inherit from text, so if we changed that argument, all downstream arguments would be affected.
+
+To remove any item, use element_blank().
+
+You usually define what element_*() you're using
+
+For the following u dont need that:
+
+Whitespace means all the non-visible margins and spacing in the plot.
+
+To set a single whitespace value, use unit(x, unit), where x is the amount and unit is the unit of measure.
+
+Borders require you to set 4 positions, so use margin(top, right, bottom, left, unit). To remember the margin order, think TRouBLe.
+
+The default unit is "pt" (points), which scales well with text. Other options include "cm", "in" (inches) and "lines" (of text).
+
+
+EG: axis.tick.length(), legend.key.size(),legend.margin(), plot.margin()
+
+
+Theme flexibility:
+
+We can create our own themes!
+
+You can create a theme() object and save it and then add that to your plot!
+
+built in theme functions from ggplot or ggthemes packages
+
+update theme to default: original<-theme_update() then theme_set(original)
+
+Full example:
+
+```{r}
+# Set the color scale
+palette <- brewer.pal(5, "RdYlBu")[-(2:4)]
+
+# Add a title and caption
+ggplot(gm2007, aes(x = lifeExp, y = country, color = lifeExp)) +
+  geom_point(size = 4) +
+  geom_segment(aes(xend = 30, yend = country), size = 2) +
+  geom_text(aes(label = round(lifeExp,1)), color = "white", size = 1.5) +
+  scale_x_continuous("", expand = c(0,0), limits = c(30,90), position = "top") +
+  scale_color_gradientn(colors = palette) +
+  labs(title="Highest and lowest life expectancies, 2007",
+  caption="Source: gapminder")+
+  theme_classic() +
+  theme(axis.line.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text = element_text(color="black"),
+        axis.title = element_blank(),
+        legend.position = "none")+
+    geom_vline(xintercept=global_mean, color="grey40", linetype=3)+
+    annotate(
+    "text",
+    x = x_start, y = y_start,
+    label = "The\nglobal\naverage",
+    vjust = 1, size = 3, color = "grey40"
+  )+
+  annotate(
+    "curve",
+    x = x_start, y = y_start,
+    xend = x_end, yend = y_end,
+    arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
+    color = "grey40"
+  )
+```
+
