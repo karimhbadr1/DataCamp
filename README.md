@@ -21,4 +21,5 @@ All my notes from taking data camp courses and tracks
  - Course 1: Introduction to R
  - Course 2: Intermediate R
  - Course 3: Introduction to the Tidyverse
- - 
+ - Course 4: Data Manipulation with dplyr
+ - Course 5: Joining Data with dplyr
