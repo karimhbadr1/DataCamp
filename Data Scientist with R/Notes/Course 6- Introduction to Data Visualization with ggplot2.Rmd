@@ -1,0 +1,27 @@
+---
+title: 'Course 5 - Joining Data with dplyr'
+author: "Karim Badr"
+date: "06/03/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Let's read all data files first.
+
+```{r}
+load("/Users/karimbadr/Documents/GitHub/DataCamp/Data Scientist with R/Notes/iris.RData")
+load("/Users/karimbadr/Documents/GitHub/DataCamp/Data Scientist with R/Notes/diamonds.RData")
+load("/Users/karimbadr/Documents/GitHub/DataCamp/Data Scientist with R/Notes/fish.RData")
+load("/Users/karimbadr/Documents/GitHub/DataCamp/Data Scientist with R/Notes/recess.RData")
+```
+
+# Chapter 1: Introduction
+
+# Chapter 2: Aesthetics
+
+# Chapter 3: Geometries
+
+# Chapter 4: Themes
