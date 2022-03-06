@@ -1,0 +1,18 @@
+---
+title: 'Course 7 - Intermediate Data Visualization with ggplot2'
+author: "Karim Badr"
+date: "06/03/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Chapter 1: Statistics
+
+# Chapter 2: Coordinates
+
+# Chapter 3: Facets
+
+# Chapter 4: Best Practices

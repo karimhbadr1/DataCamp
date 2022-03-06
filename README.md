@@ -23,3 +23,5 @@ All my notes from taking data camp courses and tracks
  - Course 3: Introduction to the Tidyverse
  - Course 4: Data Manipulation with dplyr
  - Course 5: Joining Data with dplyr
+ - Course 6: Introduction to Data Visualization with ggplot2
+ - Course 7: Intermediate Data Visualization with ggplot2
