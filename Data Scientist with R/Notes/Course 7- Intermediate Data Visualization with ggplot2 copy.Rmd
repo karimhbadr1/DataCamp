@@ -11,6 +11,78 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Chapter 1: Statistics
 
+Either called from within a geom or independently. 
+
+geom_bar <-> stat_count
+
+geom_histogram / geom_freqpoly <-> stat_bin
+
+geom_smooth <-> stat_smooth
+
+geom_smooth uses method=LOESS by default : a non-parametric smoothing algorithm when <1000 obs. Uses weighted mean.
+It passes a sliding window across x-axis, controlled by the span argument. smaller span --> more noise
+can use different methods such as lm or other parametric methods. Groups >1000's default is gam.
+
+For parametric models, you can use the fullrange=TRUE argument to show the entire range of predictions. 
+
+If you set se=FALSE, you dont get the prediction gray area (se ribbon).
+
+```{r}
+stat_smooth(mapping=aes(group=1),method="lm",se=FALSE)
+```
+
+this does the smoothing for all values even though we have that done seperately for each group before.
+
+LOESS isn't great on very short sections of data; better to use lm for short sections and LOESS for overall. The default span for LOESS is 0.9
+
+4 causes for over-plotting: larged datasets, aligned values on a single axis, low-precision data, and integer data
+
+the last 2 causes can be dealt with using geom_count(). geom_count() is associated with stat_sum()
+
+geom_quantile() is robust as opposed to linear models with means that are not robust
+you would use quantile regression when you have heteroscedasticity (variance across predictor variable is not consistent). geom_quantile() is associated with stat_quantile().
+
+Stats: from library(Hmisc), use smean.sdl(x,mult=1) to find the mean and plus or minus 1 SD (thats why mult=1). the equivalent to this in using it in ggplot2 is mean_sdl(x,mult=1)
+
+```{r}
+ggplot(iris,aes(x=Species,y=Sepal.Length))+
+  stat_summary(fun.data=mean_sdl,fun.args=list(mult=1))
+```
+
+```{r}
+#error bars
+ggplot(iris,aes(x=Species,y=Sepal.Length))+
+  stat_summary(fun.y=mean,geom="point")+
+  stat_summary(fun.data=mean_sdl,fun.args=list(mult=1),geom="errorbar",width=0.1)
+```
+
+qt(p,df) gives you the t score using a degrees of freedom df and p which is the area to the left so for 95% p=0.975
+
+can also use from Hmisc this: mean_cl_normal(x)
+
+IMPORTANT:
+
+stat_summary(): summarize y values at distinct x values.
+stat_function(): compute y values from a function of x values
+stat_qq(): perform calculations for a quantile-quantile plot [QQ Plot].
+
+```{r}
+mam.new <- data.frame(body = log10(iris$Sepal.Length))
+
+ggplot(mam.new, aes(x = body)) +   
+  geom_histogram(aes( y = ..density..)) +  
+  geom_rug() +  
+  stat_function(fun = dnorm, color = "red",
+                args = list(mean = mean(mam.new$body),sd = sd(mam.new$body)))
+```
+
+```{r}
+ggplot(mam.new, aes(sample = body)) +
+  stat_qq() +  
+  geom_qq_line(col = "red")
+
+```
+
 # Chapter 2: Coordinates
 
 # Chapter 3: Facets
