@@ -7,8 +7,10 @@ All my notes from taking data camp courses and tracks
  - Course 3: Data Visualization for Everyone
  - Course 4: Data Engineering for Everyone
  - Course 5: Cloud Computing for Everyone
+ 
 2) <b> SQL Fundamentals [Skill Track] </b>:
  - Course 1: Introduction to SQL
+ - Course 2: Joining Data in SQL
 
 3) <b> R Programming [Skill Track] </b>:
  - Course 1: Introduction to R
